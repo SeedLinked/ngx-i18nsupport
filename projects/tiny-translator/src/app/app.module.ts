@@ -8,8 +8,6 @@ import {environment} from '../environments/environment';
 import {APP_CONFIG, APP_CONFIG_VALUE} from './app.config';
 import {routing, appRoutingProviders} from './app.routing';
 
-import 'hammerjs';
-
 import { AppComponent } from './app.component';
 import { ProjectStarterComponent } from './project-starter/project-starter.component';
 import {TinyTranslatorService} from './model/tiny-translator.service';
