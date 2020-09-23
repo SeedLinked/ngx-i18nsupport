@@ -1,11 +1,11 @@
-import {format} from 'util';
-import {ITranslationMessagesFile} from '../api/i-translation-messages-file';
-import {ITransUnit} from '../api/i-trans-unit';
-import {FORMAT_XLIFF12, FILETYPE_XLIFF12} from '../api/constants';
-import {DOMUtilities} from './dom-utilities';
-import {XliffTransUnit} from './xliff-trans-unit';
-import {AbstractTranslationMessagesFile} from './abstract-translation-messages-file';
-import {AbstractTransUnit} from './abstract-trans-unit';
+import { format } from 'util';
+import { ITranslationMessagesFile } from '../api/i-translation-messages-file';
+import { ITransUnit } from '../api/i-trans-unit';
+import { FORMAT_XLIFF12, FILETYPE_XLIFF12 } from '../api/constants';
+import { DOMUtilities } from './dom-utilities';
+import { XliffTransUnit } from './xliff-trans-unit';
+import { AbstractTranslationMessagesFile } from './abstract-translation-messages-file';
+import { AbstractTransUnit } from './abstract-trans-unit';
 /**
  * Created by martin on 23.02.2017.
  * Ab xliff file read from a source file.
@@ -22,15 +22,15 @@ export class XliffFile extends AbstractTranslationMessagesFile implements ITrans
      * This is read from the file, but if you know it before, you can avoid reading the file twice.
      * @return XliffFile
      */
-    constructor(xmlString: string, path: string, encoding: string) {
+    constructor(xmlString: string, path: string, encoding: string, optionalMaster?: { xmlContent: string, path: string, encoding: string }) {
         super();
         this._warnings = [];
         this._numberOfTransUnitsWithMissingId = 0;
-        this.initializeFromContent(xmlString, path, encoding);
+        this.initializeFromContent(xmlString, path, encoding, optionalMaster);
     }
 
-    private initializeFromContent(xmlString: string, path: string, encoding: string): XliffFile {
-        this.parseContent(xmlString, path, encoding);
+    private initializeFromContent(xmlString: string, path: string, encoding: string, optionalMaster?: { xmlContent: string, path: string, encoding: string }): XliffFile {
+        this.parseContent(xmlString, path, encoding, optionalMaster);
         const xliffList = this._parsedDocument.getElementsByTagName('xliff');
         if (xliffList.length !== 1) {
             throw new Error(format('File "%s" seems to be no xliff file (should contain an xliff element)', path));
@@ -74,6 +74,7 @@ export class XliffFile extends AbstractTranslationMessagesFile implements ITrans
     protected initializeTransUnits() {
         this.transUnits = [];
         const transUnitsInFile = this._parsedDocument.getElementsByTagName('trans-unit');
+
         for (let i = 0; i < transUnitsInFile.length; i++) {
             const transunit = transUnitsInFile.item(i);
             const id = transunit.getAttribute('id');
@@ -81,6 +82,20 @@ export class XliffFile extends AbstractTranslationMessagesFile implements ITrans
                 this._warnings.push(format('oops, trans-unit without "id" found in master, please check file %s', this._filename));
             }
             this.transUnits.push(new XliffTransUnit(transunit, id, this));
+        }
+
+        if (this._parsedOptionalMasterDocument) {
+            this.optionalMasterTransUnits = [];
+            // if we has an optional master document we push the optional master transunits to the array
+            const transUnitsInOptionalMasterFile = this._parsedOptionalMasterDocument.getElementsByTagName('trans-unit');
+            for (let i = 0; i < transUnitsInOptionalMasterFile.length; i++) {
+                const transunit = transUnitsInOptionalMasterFile.item(i);
+                const id = transunit.getAttribute('id');
+                if (!id) {
+                    this._warnings.push(format('oops, trans-unit without "id" found in master, please check file %s', this._filename));
+                }
+                this.optionalMasterTransUnits.push(new XliffTransUnit(transunit, id, this));
+            }
         }
     }
 
@@ -159,7 +174,7 @@ export class XliffFile extends AbstractTranslationMessagesFile implements ITrans
         if (this.transUnitWithId(foreignTransUnit.id)) {
             throw new Error(format('tu with id %s already exists in file, cannot import it', foreignTransUnit.id));
         }
-        const newTu = (<AbstractTransUnit> foreignTransUnit).cloneWithSourceAsTarget(isDefaultLang, copyContent, this);
+        const newTu = (<AbstractTransUnit>foreignTransUnit).cloneWithSourceAsTarget(isDefaultLang, copyContent, this);
         const bodyElement = DOMUtilities.getFirstElementByTagName(this._parsedDocument, 'body');
         if (!bodyElement) {
             throw new Error(format('File "%s" seems to be no xliff 1.2 file (should contain a body element)', this._filename));
@@ -198,7 +213,7 @@ export class XliffFile extends AbstractTranslationMessagesFile implements ITrans
             this.countNumbers();
             return newTu;
         } else {
-         return null;
+            return null;
         }
     }
 
@@ -216,15 +231,27 @@ export class XliffFile extends AbstractTranslationMessagesFile implements ITrans
      * Wben true, content will be copied from source.
      * When false, content will be left empty (if it is not the default language).
      */
-    public createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean)
+    public createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean, optionalMaster?: { xmlContent: string, path: string, encoding: string })
         : ITranslationMessagesFile {
-        const translationFile = new XliffFile(this.editedContent(), filename, this.encoding());
+
+        const translationFile = new XliffFile(this.editedContent(), filename, this.encoding(), optionalMaster);
         translationFile.setNewTransUnitTargetPraefix(this.targetPraefix);
         translationFile.setNewTransUnitTargetSuffix(this.targetSuffix);
         translationFile.setTargetLanguage(lang);
         translationFile.forEachTransUnit((transUnit: ITransUnit) => {
-            (<AbstractTransUnit> transUnit).useSourceAsTarget(isDefaultLang, copyContent);
+            (<AbstractTransUnit>transUnit).useSourceAsTarget(isDefaultLang, copyContent);
         });
+
+        if (optionalMaster && translationFile.optionalMasterTransUnits && translationFile.optionalMasterTransUnits.length > 0) {
+            // If optional master is specified we will iterate the master transunits and remove from translation file if they already exist in the master
+            translationFile.optionalMasterTransUnits.forEach(unit => {
+                const tranUnit = translationFile.transUnitWithId(unit.id);
+                if (tranUnit) {
+                    translationFile.removeTransUnitWithId(tranUnit.id);
+                }
+            });
+        }
+
         return translationFile;
     }
 }

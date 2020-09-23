@@ -1,20 +1,22 @@
-import {CommandOutput} from '../common/command-output';
-import {XliffMergeParameters} from './xliff-merge-parameters';
-import {XliffMergeError} from './xliff-merge-error';
-import {FileUtil} from '../common/file-util';
-import {VERSION} from './version';
-import {format} from 'util';
-import {isNullOrUndefined} from '../common/util';
-import {ITranslationMessagesFile, ITransUnit,
+import { CommandOutput } from '../common/command-output';
+import { XliffMergeParameters } from './xliff-merge-parameters';
+import { XliffMergeError } from './xliff-merge-error';
+import { FileUtil } from '../common/file-util';
+import { VERSION } from './version';
+import { format } from 'util';
+import { isNullOrUndefined } from '../common/util';
+import {
+    ITranslationMessagesFile, ITransUnit,
     FORMAT_XMB, FORMAT_XTB,
-    NORMALIZATION_FORMAT_DEFAULT, STATE_FINAL, STATE_TRANSLATED} from '@ngx-i18nsupport/ngx-i18nsupport-lib';
-import {ProgramOptions, IConfigFile} from './i-xliff-merge-options';
-import {NgxTranslateExtractor} from './ngx-translate-extractor';
-import {TranslationMessagesFileReader} from './translation-messages-file-reader';
-import {Observable, of, forkJoin} from 'rxjs';
-import {map, catchError} from 'rxjs/operators';
-import {XliffMergeAutoTranslateService} from '../autotranslate/xliff-merge-auto-translate-service';
-import {AutoTranslateSummaryReport} from '../autotranslate/auto-translate-summary-report';
+    NORMALIZATION_FORMAT_DEFAULT, STATE_FINAL, STATE_TRANSLATED
+} from '@ngx-i18nsupport/ngx-i18nsupport-lib';
+import { ProgramOptions, IConfigFile } from './i-xliff-merge-options';
+import { NgxTranslateExtractor } from './ngx-translate-extractor';
+import { TranslationMessagesFileReader } from './translation-messages-file-reader';
+import { Observable, of, forkJoin } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { XliffMergeAutoTranslateService } from '../autotranslate/xliff-merge-auto-translate-service';
+import { AutoTranslateSummaryReport } from '../autotranslate/auto-translate-summary-report';
 
 /**
  * Created by martin on 17.02.2017.
@@ -67,13 +69,26 @@ export class XliffMerge {
                 }
             } else if (arg === '--quiet' || arg === '-q') {
                 options.quiet = true;
+            } else if (arg === '--language' || arg === '-l') {
+                i++;
+                if (i >= argv.length) {
+                    console.log('missing language');
+                    return null;
+                } else {
+                    if (argv[i].indexOf(',') !== -1) {
+                        const newLocal = argv[i].split(',');
+                        options.languages.push(...newLocal);
+                    } else {
+                        options.languages.push(argv[i]);
+                    }
+                }
             } else if (arg === '--help' || arg === '-help' || arg === '-h') {
                 XliffMerge.showUsage();
             } else if (arg.length > 0 && arg.charAt(0) === '-') {
                 console.log('unknown option');
                 return null;
             } else {
-                options.languages.push(arg);
+                //options.languages.push(arg);
             }
         }
         return options;
@@ -306,18 +321,22 @@ export class XliffMerge {
         const isDefaultLang: boolean = (lang === this.parameters.defaultLanguage());
         this.master.setNewTransUnitTargetPraefix(this.parameters.targetPraefix());
         this.master.setNewTransUnitTargetSuffix(this.parameters.targetSuffix());
+        let optionalMaster;
+        if (this.parameters.optionalMasterFilePath(lang)) {
+            optionalMaster = TranslationMessagesFileReader.masterFileContent(this.parameters.optionalMasterFilePath(lang), this.parameters.encoding());
+        }
         const languageSpecificMessagesFile: ITranslationMessagesFile =
-            this.master.createTranslationFileForLang(lang, languageXliffFilePath, isDefaultLang, this.parameters.useSourceAsTarget());
+            this.master.createTranslationFileForLang(lang, languageXliffFilePath, isDefaultLang, this.parameters.useSourceAsTarget(), optionalMaster);
         return this.autoTranslate(this.master.sourceLanguage(), lang, languageSpecificMessagesFile).pipe(
             map((/* summary */) => {
-            // write it to file
-            TranslationMessagesFileReader.save(languageSpecificMessagesFile, this.parameters.beautifyOutput());
-            this.commandOutput.info('created new file "%s" for target-language="%s"', languageXliffFilePath, lang);
-            if (!isDefaultLang) {
-                this.commandOutput.warn('please translate file "%s" to target-language="%s"', languageXliffFilePath, lang);
-            }
-            return null;
-        }));
+                // write it to file
+                TranslationMessagesFileReader.save(languageSpecificMessagesFile, this.parameters.beautifyOutput());
+                this.commandOutput.info('created new file "%s" for target-language="%s"', languageXliffFilePath, lang);
+                if (!isDefaultLang) {
+                    this.commandOutput.warn('please translate file "%s" to target-language="%s"', languageXliffFilePath, lang);
+                }
+                return null;
+            }));
     }
 
     /**
@@ -344,7 +363,8 @@ export class XliffMerge {
             TranslationMessagesFileReader.fromFile(
                 this.translationFormat(this.parameters.i18nFormat()),
                 languageXliffFilePath,
-                this.parameters.encoding());
+                this.parameters.encoding(),
+                this.parameters.optionalMasterFilePath(lang));
         const isDefaultLang: boolean = (lang === this.parameters.defaultLanguage());
         let newCount = 0;
         let correctSourceContentCount = 0;
@@ -355,7 +375,12 @@ export class XliffMerge {
         languageSpecificMessagesFile.setNewTransUnitTargetSuffix(this.parameters.targetSuffix());
         let lastProcessedUnit: ITransUnit = null;
         this.master.forEachTransUnit((masterTransUnit) => {
-            const transUnit: ITransUnit = languageSpecificMessagesFile.transUnitWithId(masterTransUnit.id);
+            let transUnit: ITransUnit = languageSpecificMessagesFile.transUnitWithId(masterTransUnit.id);
+            const optionalTransUnit: ITransUnit = languageSpecificMessagesFile.optionalMasterTransUnitWithId(masterTransUnit.id);
+            if (!transUnit && optionalTransUnit) {
+                // If we dont have a transunit in the language file but there is one in the language master file we use the language master one instead.
+                transUnit = optionalTransUnit;
+            }
 
             if (!transUnit) {
                 // oops, no translation, must be a new key, so add it
@@ -481,9 +506,9 @@ export class XliffMerge {
 
         let changedTransUnit: ITransUnit = null;
         languageSpecificMessagesFile.forEachTransUnit((languageTransUnit) => {
-             if (this.areSourcesNearlyEqual(languageTransUnit, masterTransUnit)) {
-                 changedTransUnit = languageTransUnit;
-             }
+            if (this.areSourcesNearlyEqual(languageTransUnit, masterTransUnit)) {
+                changedTransUnit = languageTransUnit;
+            }
         });
         if (!changedTransUnit) {
             return null;
@@ -532,8 +557,8 @@ export class XliffMerge {
     }
 
     private areSourceReferencesEqual(
-        ref1: {sourcefile: string; linenumber: number; }[],
-        ref2: {sourcefile: string; linenumber: number; }[]): boolean {
+        ref1: { sourcefile: string; linenumber: number; }[],
+        ref2: { sourcefile: string; linenumber: number; }[]): boolean {
 
         if ((isNullOrUndefined(ref1) && !isNullOrUndefined(ref2)) || (isNullOrUndefined(ref2) && !isNullOrUndefined(ref1))) {
             return false;
@@ -543,9 +568,9 @@ export class XliffMerge {
         }
         // bot refs are set now, convert to set to compare them
         const set1: Set<string> = new Set<string>();
-        ref1.forEach((ref) => {set1.add(ref.sourcefile + ':' + ref.linenumber); });
+        ref1.forEach((ref) => { set1.add(ref.sourcefile + ':' + ref.linenumber); });
         const set2: Set<string> = new Set<string>();
-        ref2.forEach((ref) => {set2.add(ref.sourcefile + ':' + ref.linenumber); });
+        ref2.forEach((ref) => { set2.add(ref.sourcefile + ':' + ref.linenumber); });
         if (set1.size !== set2.size) {
             return false;
         }

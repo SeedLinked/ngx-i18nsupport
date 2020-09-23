@@ -249,7 +249,7 @@ export class XtbFile extends AbstractTranslationMessagesFile implements ITransla
      * Wben true, content will be copied from source.
      * When false, content will be left empty (if it is not the default language).
      */
-    public createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean)
+    public createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean, optionalMaster?: {xmlContent: string, path: string, encoding: string})
         : ITranslationMessagesFile {
         throw new Error(format('File "%s", xtb files are not translatable, they are already translations', filename));
     }

@@ -218,7 +218,7 @@ export class Xliff2File extends AbstractTranslationMessagesFile implements ITran
      * Wben true, content will be copied from source.
      * When false, content will be left empty (if it is not the default language).
      */
-    public createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean)
+    public createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean, optionalMaster?: {xmlContent: string, path: string, encoding: string})
         : ITranslationMessagesFile {
         const translationFile = new Xliff2File(this.editedContent(), filename, this.encoding());
         translationFile.setNewTransUnitTargetPraefix(this.targetPraefix);

@@ -1,10 +1,10 @@
-import {STATE_NEW, STATE_TRANSLATED} from '../api/constants';
-import {ITranslationMessagesFile} from '../api/i-translation-messages-file';
-import {INormalizedMessage} from '../api/i-normalized-message';
-import {ITransUnit} from '../api/i-trans-unit';
-import {isNullOrUndefined} from 'util';
-import {DOMParser} from 'xmldom';
-import {XmlSerializer, XmlSerializerOptions} from './xml-serializer';
+import { STATE_NEW, STATE_TRANSLATED } from '../api/constants';
+import { ITranslationMessagesFile } from '../api/i-translation-messages-file';
+import { INormalizedMessage } from '../api/i-normalized-message';
+import { ITransUnit } from '../api/i-trans-unit';
+import { isNullOrUndefined } from 'util';
+import { DOMParser } from 'xmldom';
+import { XmlSerializer, XmlSerializerOptions } from './xml-serializer';
 /**
  * Created by roobm on 09.05.2017.
  * Abstract superclass for all implementations of ITranslationMessagesFile.
@@ -18,10 +18,14 @@ export abstract class AbstractTranslationMessagesFile implements ITranslationMes
 
     protected _parsedDocument: Document;
 
+    protected _parsedOptionalMasterDocument: Document;
+
     protected _fileEndsWithEOL: boolean;
 
     // trans-unit elements and their id from the file
     protected transUnits: ITransUnit[];
+
+    protected optionalMasterTransUnits: ITransUnit[];
 
     protected _warnings: string[];
 
@@ -56,6 +60,9 @@ export abstract class AbstractTranslationMessagesFile implements ITranslationMes
         this._filename = path;
         this._encoding = encoding;
         this._parsedDocument = new DOMParser().parseFromString(xmlString, 'text/xml');
+        if (optionalMaster) {
+            this._parsedOptionalMasterDocument = new DOMParser().parseFromString(optionalMaster.xmlContent, 'text/xml');
+        }
         this._fileEndsWithEOL = xmlString.endsWith('\n');
     }
 
@@ -176,6 +183,16 @@ export abstract class AbstractTranslationMessagesFile implements ITranslationMes
     }
 
     /**
+     * Get optional trans-unit with given id.
+     * @param id id
+     * @return trans-unit with given id.
+     */
+    public optionalMasterTransUnitWithId(id: string): ITransUnit {
+        this.lazyInitializeTransUnits();
+        return this.optionalMasterTransUnits.find((tu) => tu.id === id);
+    }
+
+    /**
      * Edit functions following her
      */
 
@@ -292,9 +309,9 @@ export abstract class AbstractTranslationMessagesFile implements ITranslationMes
     public editedContent(beautifyOutput?: boolean): string {
         const options: XmlSerializerOptions = {};
         if (beautifyOutput === true) {
-           options.beautify = true;
-           options.indentString = '  ';
-           options.mixedContentElements = this.elementsWithMixedContent();
+            options.beautify = true;
+            options.indentString = '  ';
+            options.mixedContentElements = this.elementsWithMixedContent();
         }
         const result = new XmlSerializer().serializeToString(this._parsedDocument, options);
         if (this._fileEndsWithEOL) {
@@ -319,6 +336,6 @@ export abstract class AbstractTranslationMessagesFile implements ITranslationMes
      * Wben true, content will be copied from source.
      * When false, content will be left empty (if it is not the default language).
      */
-    abstract createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean)
+    abstract createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean, optionalMaster?: {xmlContent: string, path: string, encoding: string})
         : ITranslationMessagesFile;
 }

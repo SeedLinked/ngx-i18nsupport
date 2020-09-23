@@ -1,4 +1,4 @@
-import {ITransUnit} from './i-trans-unit';
+import { ITransUnit } from './i-trans-unit';
 
 /**
  * The Common interface of XliffFile and XmbFile.
@@ -71,6 +71,13 @@ export interface ITranslationMessagesFile {
      * @return trans-unit with given id.
      */
     transUnitWithId(id: string): ITransUnit;
+
+        /**
+     * Get optional master trans-unit with given id.
+     * @param id id
+     * @return trans-unit with given id.
+     */
+    optionalMasterTransUnitWithId(id: string): ITransUnit;
 
     /**
      * Edit functions following her
@@ -182,5 +189,5 @@ export interface ITranslationMessagesFile {
      * Wben true, content will be copied from source.
      * When false, content will be left empty (if it is not the default language).
      */
-    createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean): ITranslationMessagesFile;
+    createTranslationFileForLang(lang: string, filename: string, isDefaultLang: boolean, copyContent: boolean, optionalMaster?: { xmlContent: string, path: string, encoding: string }): ITranslationMessagesFile;
 }

@@ -8,7 +8,8 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "buildall": "cd projects/ngx-i18nsupport-lib && npm run build && cd ../../projects/xliffmerge && npm run build && cd ../../projects/tooling && npm run build && cd ../../projects/tiny-translator && npm run build && cd ../..",
+    "buildall": "cd projects/ngx-i18nsupport-lib && npm run build && cd ../../projects/xliffmerge && npm run build && cd ../../projects/tooling && npm run build && cd ../..",
+    "installall": "cd dist/ngx-i18nsupport-lib && npm install && cd ../../dist/ngx-i18nsupport && npm install && cd ../../dist/tooling && npm install && cd ../..",
     "testall": "cd projects/ngx-i18nsupport-lib && npm run test && cd ../../projects/xliffmerge && npm run test && cd ../../projects/tooling && npm run test && cd ../..",
     "coverall": "cd projects/ngx-i18nsupport-lib && npm run cover && cd ../../projects/xliffmerge && npm run cover && cd ../../projects/tooling && npm run cover && cd ../../projects/tiny-translator && npm run build && cd ../.."
   },
@@ -20,7 +21,7 @@
     "projects/tiny-translator"
   ],
   "dependencies": {
-    "@angular-devkit/architect": "^0.800.0",
+    "@angular-devkit/architect": "~0.1001.2",
     "@angular-devkit/core": "~10.1.2",
     "@angular-devkit/schematics": "~10.1.2",
     "@angular/animations": "^10.1.2",
@@ -33,7 +34,7 @@
     "@angular/material": "^10.2.2",
     "@angular/platform-browser": "^10.1.2",
     "@angular/platform-browser-dynamic": "^10.1.2",
-    "@angular/pwa": "^0.13.9",
+    "@angular/pwa": "~0.1001.2",
     "@angular/router": "~10.1.2",
     "@angular/service-worker": "~10.1.2",
     "core-js": "^2.6.2",

@@ -32,6 +32,7 @@ export interface IXliffMergeOptions {
     i18nFile?: string;  // master file, if not absolute, it is relative to srcDir
     i18nFormat?: string; // xlf or xmb
     encoding?: string;  // encoding to write xml
+    optionalMasterFilePath?: string;  // optional existing language master file path
     genDir?: string;    // directory, where the files are written to
     angularCompilerOptions?: {
         genDir?: string;    // same as genDir, just to be compatible with ng-xi18n

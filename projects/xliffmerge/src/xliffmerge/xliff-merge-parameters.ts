@@ -5,15 +5,15 @@
  */
 
 import * as fs from 'fs';
-import {XliffMergeError} from './xliff-merge-error';
-import {Stats} from 'fs';
-import {CommandOutput} from '../common/command-output';
-import {format} from 'util';
-import {isArray, isNullOrUndefined} from '../common/util';
-import {ProgramOptions, IConfigFile} from './i-xliff-merge-options';
-import {FileUtil} from '../common/file-util';
-import {NgxTranslateExtractor} from './ngx-translate-extractor';
-import {dirname, isAbsolute, join, normalize} from 'path';
+import { XliffMergeError } from './xliff-merge-error';
+import { Stats } from 'fs';
+import { CommandOutput } from '../common/command-output';
+import { format } from 'util';
+import { isArray, isNullOrUndefined } from '../common/util';
+import { ProgramOptions, IConfigFile } from './i-xliff-merge-options';
+import { FileUtil } from '../common/file-util';
+import { NgxTranslateExtractor } from './ngx-translate-extractor';
+import { dirname, isAbsolute, join, normalize } from 'path';
 
 const PROFILE_CANDIDATES = ['package.json', '.angular-cli.json'];
 
@@ -29,6 +29,7 @@ export class XliffMergeParameters {
     private _i18nFile: string;
     private _i18nFormat: string;
     private _encoding: string;
+    private _optionalMasterFilePath: string;
     private _genDir: string;
     private _languages: string[];
     private _removeUnusedIds: boolean;
@@ -39,7 +40,7 @@ export class XliffMergeParameters {
     private _targetSuffix: string;
     private _beautifyOutput: boolean;
     private _preserveOrder: boolean;
-    private _autotranslate: boolean|string[];
+    private _autotranslate: boolean | string[];
     private _apikey: string;
     private _apikeyfile: string;
 
@@ -145,6 +146,9 @@ export class XliffMergeParameters {
         const xliffmergeOptions = profileContent.xliffmergeOptions;
         xliffmergeOptions.srcDir = this.adjustPathToProfilePath(profilePath, xliffmergeOptions.srcDir);
         xliffmergeOptions.genDir = this.adjustPathToProfilePath(profilePath, xliffmergeOptions.genDir);
+        if (xliffmergeOptions.optionalMasterFilePath) {
+            xliffmergeOptions.optionalMasterFilePath = this.adjustPathToProfilePath(profilePath, xliffmergeOptions.optionalMasterFilePath);
+        }
         xliffmergeOptions.apikeyfile = this.adjustPathToProfilePath(profilePath, xliffmergeOptions.apikeyfile);
         return profileContent;
     }
@@ -188,6 +192,9 @@ export class XliffMergeParameters {
             if (profile.genDir) {
                 // this must be after angularCompilerOptions to be preferred
                 this._genDir = profile.genDir;
+            }
+            if (profile.optionalMasterFilePath) {
+                this._optionalMasterFilePath = profile.optionalMasterFilePath;
             }
             if (profile.i18nBaseFile) {
                 this._i18nBaseFile = profile.i18nBaseFile;
@@ -314,7 +321,7 @@ export class XliffMergeParameters {
                     'configured targetSuffix "' + this.targetSuffix() + '" will not be used because "useSourceAsTarget" is disabled"');
             }
         }
-     }
+    }
 
     /**
      * Check syntax of language.
@@ -331,6 +338,17 @@ export class XliffMergeParameters {
 
     public allowIdChange(): boolean {
         return (isNullOrUndefined(this._allowIdChange)) ? false : this._allowIdChange;
+    }
+
+    public optionalMasterFilePath(lang?: string): string {
+        if (lang) {
+            if(this._optionalMasterFilePath){
+                return this._optionalMasterFilePath.replace(`.${this.i18nFormat()}`, `.${lang}.${this.i18nFormat()}`);
+            }
+            return null;
+        } else {
+            return this._optionalMasterFilePath;
+        }
     }
 
     public verbose(): boolean {
@@ -350,6 +368,7 @@ export class XliffMergeParameters {
         commandOutput.debug('defaultLanguage:\t"%s"', this.defaultLanguage());
         commandOutput.debug('srcDir:\t"%s"', this.srcDir());
         commandOutput.debug('genDir:\t"%s"', this.genDir());
+        commandOutput.debug('optionalMasterFilePath:\t"%s"', this.optionalMasterFilePath());
         commandOutput.debug('i18nBaseFile:\t"%s"', this.i18nBaseFile());
         commandOutput.debug('i18nFile:\t"%s"', this.i18nFile());
         commandOutput.debug('languages:\t%s', this.languages());
@@ -467,10 +486,10 @@ export class XliffMergeParameters {
         return this._encoding ? this._encoding : 'UTF-8';
     }
 
-     /**
-      * Output-Directory, where the output is written to.
-      * Default is <srcDir>.
-     */
+    /**
+     * Output-Directory, where the output is written to.
+     * Default is <srcDir>.
+    */
     public genDir(): string {
         return this._genDir ? this._genDir : this.srcDir();
     }
@@ -538,7 +557,7 @@ export class XliffMergeParameters {
         if (isArray(this._autotranslate)) {
             return (<string[]>this._autotranslate).length > 0;
         }
-        return <boolean> this._autotranslate;
+        return <boolean>this._autotranslate;
     }
 
     /**

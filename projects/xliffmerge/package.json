@@ -2,7 +2,7 @@
   "name": "@ngx-i18nsupport/ngx-i18nsupport",
   "version": "1.1.6",
   "description": "Some tooling to be used with the Angular i18n workflow",
-  "private": false,
+  "private": true,
   "bin": {
     "xliffmerge": "xliffmerge/xliffmerge"
   },
@@ -42,13 +42,11 @@
   "dependencies": {
     "chalk": "^2.4.1",
     "he": "^1.1.1",
-    "@ngx-i18nsupport/ngx-i18nsupport-lib": "^1.12.1",
+    "@ngx-i18nsupport/ngx-i18nsupport-lib": "file:../ngx-i18nsupport-lib",
     "request": "^2.85.0"
   },
-  "devDependencies": {
-  },
-  "peerDependencies": {
-  },
+  "devDependencies": {},
+  "peerDependencies": {},
   "xliffmergeOptions": {
     "description": "just for some tests here"
   }

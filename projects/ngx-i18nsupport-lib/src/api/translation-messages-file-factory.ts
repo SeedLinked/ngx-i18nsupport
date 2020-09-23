@@ -74,7 +74,7 @@ export class TranslationMessagesFileFactory implements ITranslationMessagesFileF
                               encoding: string,
                               optionalMaster?: { xmlContent: string, path: string, encoding: string }): ITranslationMessagesFile {
         if (i18nFormat === FORMAT_XLIFF12) {
-            return new XliffFile(xmlContent, path, encoding);
+            return new XliffFile(xmlContent, path, encoding, optionalMaster);
         }
         if (i18nFormat === FORMAT_XLIFF20) {
             return new Xliff2File(xmlContent, path, encoding);

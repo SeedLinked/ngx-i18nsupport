@@ -48,7 +48,7 @@ export class TranslationMessagesFileReader {
      * @param encoding encoding
      * @return content and encoding of file
      */
-    private static masterFileContent(optionalMasterFilePath: string, encoding: string)
+    public static masterFileContent(optionalMasterFilePath: string, encoding: string)
         : {xmlContent: string, path: string, encoding: string} {
         if (optionalMasterFilePath) {
             const masterXmlContent = XmlReader.readXmlFileContent(optionalMasterFilePath, encoding);
