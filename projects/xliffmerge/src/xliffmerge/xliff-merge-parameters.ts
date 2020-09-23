@@ -342,7 +342,7 @@ export class XliffMergeParameters {
 
     public optionalMasterFilePath(lang?: string): string {
         if (lang) {
-            if(this._optionalMasterFilePath){
+            if (this._optionalMasterFilePath) {
                 return this._optionalMasterFilePath.replace(`.${this.i18nFormat()}`, `.${lang}.${this.i18nFormat()}`);
             }
             return null;

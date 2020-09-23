@@ -322,8 +322,9 @@ export class XliffMerge {
         this.master.setNewTransUnitTargetPraefix(this.parameters.targetPraefix());
         this.master.setNewTransUnitTargetSuffix(this.parameters.targetSuffix());
         let optionalMaster;
-        if (this.parameters.optionalMasterFilePath(lang)) {
-            optionalMaster = TranslationMessagesFileReader.masterFileContent(this.parameters.optionalMasterFilePath(lang), this.parameters.encoding());
+        const optionalMasterFilePath = isDefaultLang ? this.parameters.optionalMasterFilePath() : this.parameters.optionalMasterFilePath(lang);
+        if (optionalMasterFilePath) {
+            optionalMaster = TranslationMessagesFileReader.masterFileContent(optionalMasterFilePath, this.parameters.encoding());
         }
         const languageSpecificMessagesFile: ITranslationMessagesFile =
             this.master.createTranslationFileForLang(lang, languageXliffFilePath, isDefaultLang, this.parameters.useSourceAsTarget(), optionalMaster);
@@ -358,14 +359,15 @@ export class XliffMerge {
      * @param languageXliffFilePath filename
      */
     private mergeMasterTo(lang: string, languageXliffFilePath: string): Observable<void> {
+        const isDefaultLang: boolean = (lang === this.parameters.defaultLanguage());
+        const optionalMasterFilePath = isDefaultLang ? this.parameters.optionalMasterFilePath() : this.parameters.optionalMasterFilePath(lang);
         // read lang specific file
         const languageSpecificMessagesFile: ITranslationMessagesFile =
             TranslationMessagesFileReader.fromFile(
                 this.translationFormat(this.parameters.i18nFormat()),
                 languageXliffFilePath,
                 this.parameters.encoding(),
-                this.parameters.optionalMasterFilePath(lang));
-        const isDefaultLang: boolean = (lang === this.parameters.defaultLanguage());
+                optionalMasterFilePath);
         let newCount = 0;
         let correctSourceContentCount = 0;
         let correctSourceRefCount = 0;
